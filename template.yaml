@@ -19,7 +19,7 @@ Description: >
   swiftsass-v1
 
   Sample SAM Template for swiftsass-v1
-  
+
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 
 Globals:
@@ -31,14 +31,14 @@ Globals:
       AllowHeaders: "'Content-Type'"
       AllowOrigin:  "'*'"
 
-Parameters: 
+Parameters:
   TableName:
     Type: String
-    Default: 'targatanentdetials'
+    Default: 'tanentdetials'
     Description: (Required) The name of the new DynamoDB table you want to create and save to.
     MinLength: 3
     MaxLength: 50
-    AllowedPattern: ^[A-Za-z]+$    
+    AllowedPattern: ^[A-Za-z]+$
     ConstraintDescription: 'Required parameter. Must be characters only. No numbers allowed.'
 
 
@@ -49,7 +49,7 @@ Resources:
   RegistrationFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#      Role: "arn:aws:iam::752267975477:role/lambda-exec"
       CodeUri: src
       Handler: handlers/signup-module/registration-user.registrationHandler
       Runtime: nodejs10.x
@@ -65,12 +65,12 @@ Resources:
             Properties:
               Path: /registration
               Method: post
-  
-   
+
+
   GetInputFromSQSFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#      Role: "arn:aws:iam::752267975477:role/lambda-exec"
       CodeUri: src
       Handler: handlers/signup-module/GetInputFromSQS.getSQSInputHandler
       Runtime: nodejs10.x
@@ -88,7 +88,7 @@ Resources:
   CreateUserpoolAndUserFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#      Role: "arn:aws:iam::752267975477:role/lambda-exec"
       CodeUri: src
       Handler: handlers/signup-module/create_userpool_user.createuserpoolanduser
       Runtime: nodejs10.x
@@ -109,18 +109,18 @@ Resources:
   CognitoPostConfirmationTiggerForVerifedUserFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#      Role: "arn:aws:iam::752267975477:role/lambda-exec"
       CodeUri: src
       Handler: handlers/signup-module/cognito_user_verified_trigger.cognitouserverified
       Runtime: nodejs10.x
       Environment:
         Variables:
           Email_verified_Topic: !Ref EmailVerifiedTopic
-  
+
   WorkspaceExistenceCheckFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#      Role: "arn:aws:iam::752267975477:role/lambda-exec"
       CodeUri: src
       Handler: handlers/signup-module/workspace_existence_check.workspaceexistence
       Runtime: nodejs10.x
@@ -138,7 +138,7 @@ Resources:
   GetcognitologinUrlFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#      Role: "arn:aws:iam::752267975477:role/lambda-exec"
       CodeUri: src
       Handler: handlers/signup-module/cognito_get_login_url.getcognitologinurl
       Runtime: nodejs10.x
@@ -155,7 +155,7 @@ Resources:
   GetCognitoAllUsersFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#      Role: "arn:aws:iam::752267975477:role/lambda-exec"
       CodeUri: src
       Handler: handlers/signup-module/cognito_list_users.cognitolistusers
       Runtime: nodejs10.x
@@ -170,7 +170,7 @@ Resources:
   CognitoAdminInviteUserFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#      Role: "arn:aws:iam::752267975477:role/lambda-exec"
       CodeUri: src
       Handler: handlers/signup-module/admin_invite_user.admininviteuser
       Runtime: nodejs10.x
@@ -179,12 +179,12 @@ Resources:
           Type: Api
           Properties:
             Path: /admininviteuser
-            Method: post 
-  
+            Method: post
+
   inviteusercheck:
     Type: AWS::Serverless::Function
     Properties:
-      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#      Role: "arn:aws:iam::752267975477:role/lambda-exec"
       CodeUri: src
       Handler: handlers/signup-module/inviteuser_checkexistence.inviteusercheck
       Runtime: nodejs10.x
@@ -194,11 +194,11 @@ Resources:
           Properties:
             Path: /invitecheck
             Method: get
-  
+
   stripeplansubscription:
     Type: AWS::Serverless::Function
     Properties:
-      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#      Role: "arn:aws:iam::752267975477:role/lambda-exec"
       CodeUri: src
       Handler: handlers/stripe-plan-subscription/paid_plan_subscription.paidplansubscription
       Runtime: nodejs10.x
@@ -214,22 +214,22 @@ Resources:
 
   stripelistofplans:
     Type: AWS::Serverless::Function
-    Properties: 
-      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+    Properties:
+#      Role: "arn:aws:iam::752267975477:role/lambda-exec"
       CodeUri: src
       Handler: handlers/stripe-plan-subscription/list_stripe_plans.stripeplanslist
       Runtime: nodejs10.x
       Events:
         stripeplansllist:
           Type: Api
-          Properties: 
+          Properties:
             Path: /listofplans
-            Method: get 
-  
+            Method: get
+
   webhookendpointfunction:
     Type: AWS::Serverless::Function
     Properties:
-      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#      Role: "arn:aws:iam::752267975477:role/lambda-exec"
       CodeUri: src
       Handler: handlers/stripe-plan-subscription/stripe-webhook-endpoints/trial_ends.trialends
       Runtime: nodejs10.x
@@ -238,12 +238,12 @@ Resources:
           Type: Api
           Properties:
             Path: /webhook
-            Method: post  
-  
+            Method: post
+
   # tenantadminchooseplan:
   #   Type: AWS::Serverless::Function
   #   Properties:
-  #     Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#  #     Role: "arn:aws:iam::752267975477:role/lambda-exec"
   #     CodeUri: src
   #     Handler: handlers/plan-subscription/tenant-admin-subscription.tenantadminsubscription
   #     Runtime: nodejs10.x
@@ -260,7 +260,7 @@ Resources:
   # tenantsubscriptionexpirationFunction:
   #   Type: AWS::Serverless::Function
   #   Properties:
-  #     Role: "arn:aws:iam::752267975477:role/lambda-exec"
+#  #     Role: "arn:aws:iam::752267975477:role/lambda-exec"
   #     CodeUri: src
   #     Handler: handlers/plan-subscription/subscription-validate-cronfunction.subscriptionvalidate
   #     Runtime: nodejs10.x
@@ -273,7 +273,7 @@ Resources:
   #         Properties:
   #           Schedule: cron(0/2 * * * ? *)
 
-            
+
   # Lambda functions ended.
 
   # Sns topic created.
@@ -283,13 +283,13 @@ Resources:
     Properties:
       DisplayName: "registration-topic"
       TopicName: "registration-topic"
-  
+
   UserPoolRequestedTopic:
     Type: AWS::SNS::Topic
     Properties:
       DisplayName: "userpoolcreationrequested-topic"
       TopicName: "userpoolcreationrequested-topic"
-  
+
   UserpoolTopic:
     Type: AWS::SNS::Topic
     Properties:
@@ -314,22 +314,25 @@ Resources:
 
   MySqsQueue:
     Type: AWS::SQS::Queue
-    Properties: 
+    Properties:
       QueueName: "registration-queue"
-      
+      VisibilityTimeout: 60
+
   MySQSQueuetwo:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: "createuserpool-queue"
+      VisibilityTimeout: 60
 
 
   MessagesFromALLSNSQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: "allsnsmessages-queue"
+      VisibilityTimeout: 60
 
   # SQS queues creation ended.
-  
+
   # SQS queues policy created.
 
   snsTosqspolicy:
@@ -349,8 +352,8 @@ Resources:
                 ArnEquals:
                   "aws:SourceArn": !Ref MySNSTopic
         Queues:
-          - Ref: MySqsQueue 
-  
+          - Ref: MySqsQueue
+
   snsTosqstwopolicy:
     Type: AWS::SQS::QueuePolicy
     Properties:
@@ -369,7 +372,7 @@ Resources:
                 "aws:SourceArn": !Ref UserPoolRequestedTopic
       Queues:
         - Ref: MySQSQueuetwo
-  
+
   allsnsTosqspolicy:
     Type: AWS::SQS::QueuePolicy
     Properties:
@@ -390,8 +393,8 @@ Resources:
                   - !Ref EmailVerificationTopic
                   - !Ref EmailVerifiedTopic
       Queues:
-        - Ref: MessagesFromALLSNSQueue     
-  
+        - Ref: MessagesFromALLSNSQueue
+
   # SQS queue policy ended.
 
   # SNS subscribes SQS creation.
@@ -403,7 +406,7 @@ Resources:
       Protocol: sqs
       TopicArn: !Ref MySNSTopic
       RawMessageDelivery: 'true'
-  
+
 
   MyQueueSNSsubscriptiontwo:
     Type: AWS::SNS::Subscription
@@ -420,7 +423,7 @@ Resources:
       Protocol: sqs
       TopicArn: !Ref UserpoolTopic
       RawMessageDelivery: 'true'
-  
+
   QueueEmailVerificationTopicSNSSubscription:
     Type: AWS::SNS::Subscription
     Properties:
@@ -428,15 +431,15 @@ Resources:
       Protocol: sqs
       TopicArn: !Ref EmailVerificationTopic
       RawMessageDelivery: 'true'
-  
+
   QueueEmailVerifiedTopicSNSSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       Endpoint: !GetAtt MessagesFromALLSNSQueue.Arn
       Protocol: sqs
       TopicArn: !Ref EmailVerifiedTopic
-      RawMessageDelivery: 'true'   
-      
+      RawMessageDelivery: 'true'
+
   # SNS subscribes SQS ended.
 
 
@@ -447,34 +450,33 @@ Resources:
       PrimaryKey:
         Name: short_name
         Type: String
-      
+
 
 
 
 Outputs:
-  
+
   SwiftsassApi:
     Description: "API gateway endpoint url for dev stage for siwftsass functions"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
 
-  # QueueURL: 
+  # QueueURL:
   #   Description: "URL of new Amazon SQS Queue"
-  #   Value: 
+  #   Value:
   #     Ref: "MyQueue"
-  # QueueARN: 
+  # QueueARN:
   #   Description: "ARN of new AmazonSQS Queue"
-  #   Value: 
-  #     Fn::GetAtt: 
+  #   Value:
+  #     Fn::GetAtt:
   #       - "MyQueue"
   #       - "Arn"
-  # QueueName: 
+  # QueueName:
   #   Description: "Name of new Amazon SQS Queue"
-  #   Value: 
-  #     Fn::GetAtt: 
+  #   Value:
+  #     Fn::GetAtt:
   #       - "MyQueue"
   #       - "QueueName"
 
   # RegistrationFunction:
   #   Description : "registration lambda function arn"
   #   Value : !GetAtt RegistrationFunction.Arn
-  
