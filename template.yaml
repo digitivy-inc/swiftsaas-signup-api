@@ -1,0 +1,480 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+# Metadata:
+#   AWS::ServerlessRepo::Application:
+#     Name: swiftsaas
+#     Description: swiftsaas workspace creation and userpool creation
+#     Author: kranthi
+#     SpdxLicenseId: Apache-2.0
+#     LicenseUrl: LICENSE.txt
+#     ReadmeUrl: README.md
+#     Labels: ['tests']
+#     SemanticVersion: 0.0.1
+#     HomePageUrl:
+#     SourceCodeUrl:
+
+
+Description: >
+  swiftsass-v1
+
+  Sample SAM Template for swiftsass-v1
+  
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+
+Globals:
+  Function:
+    Timeout: 5
+  Api:
+    Cors:
+      AllowMethods: "'OPTIONS,POST,GET'"
+      AllowHeaders: "'Content-Type'"
+      AllowOrigin:  "'*'"
+
+Parameters: 
+  TableName:
+    Type: String
+    Default: 'targatanentdetials'
+    Description: (Required) The name of the new DynamoDB table you want to create and save to.
+    MinLength: 3
+    MaxLength: 50
+    AllowedPattern: ^[A-Za-z]+$    
+    ConstraintDescription: 'Required parameter. Must be characters only. No numbers allowed.'
+
+
+Resources:
+
+  # lambda Functions started
+
+  RegistrationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+      CodeUri: src
+      Handler: handlers/signup-module/registration-user.registrationHandler
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          Registration_Topic      : !Ref MySNSTopic
+          Userpool_creation_Topic : !Ref UserPoolRequestedTopic
+          Table_Name              : !Ref TableName
+
+      Events:
+          Registeruser:
+            Type: Api
+            Properties:
+              Path: /registration
+              Method: post
+  
+   
+  GetInputFromSQSFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+      CodeUri: src
+      Handler: handlers/signup-module/GetInputFromSQS.getSQSInputHandler
+      Runtime: nodejs10.x
+      Policies: AmazonDynamoDBFullAccess
+      Environment:
+        Variables:
+          Table_Name  : !Ref TableName
+
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt MySqsQueue.Arn
+
+  CreateUserpoolAndUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+      CodeUri: src
+      Handler: handlers/signup-module/create_userpool_user.createuserpoolanduser
+      Runtime: nodejs10.x
+      Timeout: 60
+      Environment:
+        Variables:
+          Table_Name  : !Ref TableName
+          Userpool_created_topic: !Ref UserpoolTopic
+          Email_verification_sent_Topic: !Ref EmailVerificationTopic
+          Cognito_Trigger: !GetAtt CognitoPostConfirmationTiggerForVerifedUserFunction.Arn
+
+      Events:
+        MySQSEventtwo:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt MySQSQueuetwo.Arn
+
+  CognitoPostConfirmationTiggerForVerifedUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+      CodeUri: src
+      Handler: handlers/signup-module/cognito_user_verified_trigger.cognitouserverified
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          Email_verified_Topic: !Ref EmailVerifiedTopic
+  
+  WorkspaceExistenceCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+      CodeUri: src
+      Handler: handlers/signup-module/workspace_existence_check.workspaceexistence
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          Table_Name : !Ref TableName
+      Events:
+          workspacecheck:
+            Type: Api
+            Properties:
+              Path: /workspacenamecheck
+              Method: post
+
+
+  GetcognitologinUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+      CodeUri: src
+      Handler: handlers/signup-module/cognito_get_login_url.getcognitologinurl
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          Table_Name : !Ref TableName
+      Events:
+          getloginurl:
+            Type: Api
+            Properties:
+              Path: /getcognitologinurl
+              Method: get
+
+  GetCognitoAllUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+      CodeUri: src
+      Handler: handlers/signup-module/cognito_list_users.cognitolistusers
+      Runtime: nodejs10.x
+      Events:
+          getcognitousers:
+            Type: Api
+            Properties:
+              Path: /getcognitolistusers
+              Method: get
+
+
+  CognitoAdminInviteUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+      CodeUri: src
+      Handler: handlers/signup-module/admin_invite_user.admininviteuser
+      Runtime: nodejs10.x
+      Events:
+        admininviteusers:
+          Type: Api
+          Properties:
+            Path: /admininviteuser
+            Method: post 
+  
+  inviteusercheck:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+      CodeUri: src
+      Handler: handlers/signup-module/inviteuser_checkexistence.inviteusercheck
+      Runtime: nodejs10.x
+      Events:
+        invitecheck:
+          Type: Api
+          Properties:
+            Path: /invitecheck
+            Method: get
+  
+  stripeplansubscription:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+      CodeUri: src
+      Handler: handlers/stripe-plan-subscription/paid_plan_subscription.paidplansubscription
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          Table_Name : !Ref TableName
+      Events:
+        plansubscription:
+          Type: Api
+          Properties:
+            Path: /basicplansubscription
+            Method: post
+
+  stripelistofplans:
+    Type: AWS::Serverless::Function
+    Properties: 
+      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+      CodeUri: src
+      Handler: handlers/stripe-plan-subscription/list_stripe_plans.stripeplanslist
+      Runtime: nodejs10.x
+      Events:
+        stripeplansllist:
+          Type: Api
+          Properties: 
+            Path: /listofplans
+            Method: get 
+  
+  webhookendpointfunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: "arn:aws:iam::752267975477:role/lambda-exec"
+      CodeUri: src
+      Handler: handlers/stripe-plan-subscription/stripe-webhook-endpoints/trial_ends.trialends
+      Runtime: nodejs10.x
+      Events:
+        webhookendpoint:
+          Type: Api
+          Properties:
+            Path: /webhook
+            Method: post  
+  
+  # tenantadminchooseplan:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Role: "arn:aws:iam::752267975477:role/lambda-exec"
+  #     CodeUri: src
+  #     Handler: handlers/plan-subscription/tenant-admin-subscription.tenantadminsubscription
+  #     Runtime: nodejs10.x
+  #     Environment:
+  #       Variables:
+  #         Table_Name : !Ref TableName
+  #     Events:
+  #       tenantplan:
+  #         Type: Api
+  #         Properties:
+  #           Path: /tenantadminplan
+  #           Method: post
+
+  # tenantsubscriptionexpirationFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Role: "arn:aws:iam::752267975477:role/lambda-exec"
+  #     CodeUri: src
+  #     Handler: handlers/plan-subscription/subscription-validate-cronfunction.subscriptionvalidate
+  #     Runtime: nodejs10.x
+  #     Environment:
+  #       Variables:
+  #         Table_Name : !Ref TableName
+  #     Events:
+  #       InvocationLevel:
+  #         Type: Schedule
+  #         Properties:
+  #           Schedule: cron(0/2 * * * ? *)
+
+            
+  # Lambda functions ended.
+
+  # Sns topic created.
+
+  MySNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: "registration-topic"
+      TopicName: "registration-topic"
+  
+  UserPoolRequestedTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: "userpoolcreationrequested-topic"
+      TopicName: "userpoolcreationrequested-topic"
+  
+  UserpoolTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: "userpool-created-topic"
+      TopicName: "userpool-created-topic"
+
+  EmailVerificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: "EmailVerificationSent-topic"
+      TopicName: "EmailVerificationSent-topic"
+
+  EmailVerifiedTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: "EmailVerified-Topic"
+      TopicName: "EmailVerified-Topic"
+
+  # sns topic ended.
+
+  # SQS queues creation.
+
+  MySqsQueue:
+    Type: AWS::SQS::Queue
+    Properties: 
+      QueueName: "registration-queue"
+      
+  MySQSQueuetwo:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: "createuserpool-queue"
+
+
+  MessagesFromALLSNSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: "allsnsmessages-queue"
+
+  # SQS queues creation ended.
+  
+  # SQS queues policy created.
+
+  snsTosqspolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Sid: "allow-sns-messages"
+              Effect: Allow
+              Principal: "*"
+              Resource: !GetAtt
+                - MySqsQueue
+                - Arn
+              Action: "SQS:SendMessage"
+              Condition:
+                ArnEquals:
+                  "aws:SourceArn": !Ref MySNSTopic
+        Queues:
+          - Ref: MySqsQueue 
+  
+  snsTosqstwopolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "allow-sns-messages"
+            Effect: Allow
+            Principal: "*"
+            Resource: !GetAtt
+              - MySQSQueuetwo
+              - Arn
+            Action: "SQS:SendMessage"
+            Condition:
+              ArnEquals:
+                "aws:SourceArn": !Ref UserPoolRequestedTopic
+      Queues:
+        - Ref: MySQSQueuetwo
+  
+  allsnsTosqspolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "allow-sns-messages"
+            Effect: Allow
+            Principal: "*"
+            Resource: !GetAtt
+              - MessagesFromALLSNSQueue
+              - Arn
+            Action: "SQS:SendMessage"
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  - !Ref UserpoolTopic
+                  - !Ref EmailVerificationTopic
+                  - !Ref EmailVerifiedTopic
+      Queues:
+        - Ref: MessagesFromALLSNSQueue     
+  
+  # SQS queue policy ended.
+
+  # SNS subscribes SQS creation.
+
+  MyQueueSNSsubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt MySqsQueue.Arn
+      Protocol: sqs
+      TopicArn: !Ref MySNSTopic
+      RawMessageDelivery: 'true'
+  
+
+  MyQueueSNSsubscriptiontwo:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt MySQSQueuetwo.Arn
+      Protocol: sqs
+      TopicArn: !Ref UserPoolRequestedTopic
+      RawMessageDelivery: 'true'
+
+  QueueUserpoolSNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt MessagesFromALLSNSQueue.Arn
+      Protocol: sqs
+      TopicArn: !Ref UserpoolTopic
+      RawMessageDelivery: 'true'
+  
+  QueueEmailVerificationTopicSNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt MessagesFromALLSNSQueue.Arn
+      Protocol: sqs
+      TopicArn: !Ref EmailVerificationTopic
+      RawMessageDelivery: 'true'
+  
+  QueueEmailVerifiedTopicSNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: !GetAtt MessagesFromALLSNSQueue.Arn
+      Protocol: sqs
+      TopicArn: !Ref EmailVerifiedTopic
+      RawMessageDelivery: 'true'   
+      
+  # SNS subscribes SQS ended.
+
+
+  WorkspaceDetaislTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName: !Ref TableName
+      PrimaryKey:
+        Name: short_name
+        Type: String
+      
+
+
+
+Outputs:
+  
+  SwiftsassApi:
+    Description: "API gateway endpoint url for dev stage for siwftsass functions"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+
+  # QueueURL: 
+  #   Description: "URL of new Amazon SQS Queue"
+  #   Value: 
+  #     Ref: "MyQueue"
+  # QueueARN: 
+  #   Description: "ARN of new AmazonSQS Queue"
+  #   Value: 
+  #     Fn::GetAtt: 
+  #       - "MyQueue"
+  #       - "Arn"
+  # QueueName: 
+  #   Description: "Name of new Amazon SQS Queue"
+  #   Value: 
+  #     Fn::GetAtt: 
+  #       - "MyQueue"
+  #       - "QueueName"
+
+  # RegistrationFunction:
+  #   Description : "registration lambda function arn"
+  #   Value : !GetAtt RegistrationFunction.Arn
+  

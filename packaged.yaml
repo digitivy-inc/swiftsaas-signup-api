@@ -1,0 +1,390 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'swiftsass-v1
+
+  Sample SAM Template for swiftsass-v1
+
+  '
+Globals:
+  Function:
+    Timeout: 5
+  Api:
+    Cors:
+      AllowMethods: '''OPTIONS,POST,GET'''
+      AllowHeaders: '''Content-Type'''
+      AllowOrigin: '''*'''
+Parameters:
+  TableName:
+    Type: String
+    Default: targatanentdetials
+    Description: (Required) The name of the new DynamoDB table you want to create
+      and save to.
+    MinLength: 3
+    MaxLength: 50
+    AllowedPattern: ^[A-Za-z]+$
+    ConstraintDescription: Required parameter. Must be characters only. No numbers
+      allowed.
+Resources:
+  RegistrationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::752267975477:role/lambda-exec
+      CodeUri: s3://swiftsaas-sam/1c57cfe5a3b065ba2113dfe5a281a60b
+      Handler: handlers/signup-module/registration-user.registrationHandler
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          Registration_Topic:
+            Ref: MySNSTopic
+          Userpool_creation_Topic:
+            Ref: UserPoolRequestedTopic
+          Table_Name:
+            Ref: TableName
+      Events:
+        Registeruser:
+          Type: Api
+          Properties:
+            Path: /registration
+            Method: post
+  GetInputFromSQSFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::752267975477:role/lambda-exec
+      CodeUri: s3://swiftsaas-sam/a1a329984a332899f77ede6e0fd4a3ae
+      Handler: handlers/signup-module/GetInputFromSQS.getSQSInputHandler
+      Runtime: nodejs10.x
+      Policies: AmazonDynamoDBFullAccess
+      Environment:
+        Variables:
+          Table_Name:
+            Ref: TableName
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::GetAtt:
+              - MySqsQueue
+              - Arn
+  CreateUserpoolAndUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::752267975477:role/lambda-exec
+      CodeUri: s3://swiftsaas-sam/c22716f75c87fc6c2e5291e70c8a799d
+      Handler: handlers/signup-module/create_userpool_user.createuserpoolanduser
+      Runtime: nodejs10.x
+      Timeout: 60
+      Environment:
+        Variables:
+          Table_Name:
+            Ref: TableName
+          Userpool_created_topic:
+            Ref: UserpoolTopic
+          Email_verification_sent_Topic:
+            Ref: EmailVerificationTopic
+          Cognito_Trigger:
+            Fn::GetAtt:
+            - CognitoPostConfirmationTiggerForVerifedUserFunction
+            - Arn
+      Events:
+        MySQSEventtwo:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::GetAtt:
+              - MySQSQueuetwo
+              - Arn
+  CognitoPostConfirmationTiggerForVerifedUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::752267975477:role/lambda-exec
+      CodeUri: s3://swiftsaas-sam/2824005723b8a6bd717acc9a2ad0b02c
+      Handler: handlers/signup-module/cognito_user_verified_trigger.cognitouserverified
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          Email_verified_Topic:
+            Ref: EmailVerifiedTopic
+  WorkspaceExistenceCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::752267975477:role/lambda-exec
+      CodeUri: s3://swiftsaas-sam/a42cd66863002b20d4f4f4e473b17d11
+      Handler: handlers/signup-module/workspace_existence_check.workspaceexistence
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          Table_Name:
+            Ref: TableName
+      Events:
+        workspacecheck:
+          Type: Api
+          Properties:
+            Path: /workspacenamecheck
+            Method: post
+  GetcognitologinUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::752267975477:role/lambda-exec
+      CodeUri: s3://swiftsaas-sam/664c0963daf0911d90599cd843fc3d9b
+      Handler: handlers/signup-module/cognito_get_login_url.getcognitologinurl
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          Table_Name:
+            Ref: TableName
+      Events:
+        getloginurl:
+          Type: Api
+          Properties:
+            Path: /getcognitologinurl
+            Method: get
+  GetCognitoAllUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::752267975477:role/lambda-exec
+      CodeUri: s3://swiftsaas-sam/28e54f534240e8a524e4f13ffa12a922
+      Handler: handlers/signup-module/cognito_list_users.cognitolistusers
+      Runtime: nodejs10.x
+      Events:
+        getcognitousers:
+          Type: Api
+          Properties:
+            Path: /getcognitolistusers
+            Method: get
+  CognitoAdminInviteUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::752267975477:role/lambda-exec
+      CodeUri: s3://swiftsaas-sam/97576a27d41d36a5f1b06ce98c7f258a
+      Handler: handlers/signup-module/admin_invite_user.admininviteuser
+      Runtime: nodejs10.x
+      Events:
+        admininviteusers:
+          Type: Api
+          Properties:
+            Path: /admininviteuser
+            Method: post
+  inviteusercheck:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::752267975477:role/lambda-exec
+      CodeUri: s3://swiftsaas-sam/fb511f8579d891df54323ef0824016aa
+      Handler: handlers/signup-module/inviteuser_checkexistence.inviteusercheck
+      Runtime: nodejs10.x
+      Events:
+        invitecheck:
+          Type: Api
+          Properties:
+            Path: /invitecheck
+            Method: get
+  stripeplansubscription:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::752267975477:role/lambda-exec
+      CodeUri: s3://swiftsaas-sam/298d29b41cf968b7c213389ea4410b34
+      Handler: handlers/stripe-plan-subscription/paid_plan_subscription.paidplansubscription
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+          Table_Name:
+            Ref: TableName
+      Events:
+        plansubscription:
+          Type: Api
+          Properties:
+            Path: /basicplansubscription
+            Method: post
+  stripelistofplans:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::752267975477:role/lambda-exec
+      CodeUri: s3://swiftsaas-sam/77d0fc1950645b50310573baae4046f7
+      Handler: handlers/stripe-plan-subscription/list_stripe_plans.stripeplanslist
+      Runtime: nodejs10.x
+      Events:
+        stripeplansllist:
+          Type: Api
+          Properties:
+            Path: /listofplans
+            Method: get
+  webhookendpointfunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::752267975477:role/lambda-exec
+      CodeUri: s3://swiftsaas-sam/40a76b53a79cd5aff79f3ad344b22abb
+      Handler: handlers/stripe-plan-subscription/stripe-webhook-endpoints/trial_ends.trialends
+      Runtime: nodejs10.x
+      Events:
+        webhookendpoint:
+          Type: Api
+          Properties:
+            Path: /webhook
+            Method: post
+  MySNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: registration-topic
+      TopicName: registration-topic
+  UserPoolRequestedTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: userpoolcreationrequested-topic
+      TopicName: userpoolcreationrequested-topic
+  UserpoolTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: userpool-created-topic
+      TopicName: userpool-created-topic
+  EmailVerificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: EmailVerificationSent-topic
+      TopicName: EmailVerificationSent-topic
+  EmailVerifiedTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: EmailVerified-Topic
+      TopicName: EmailVerified-Topic
+  MySqsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: registration-queue
+  MySQSQueuetwo:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: createuserpool-queue
+  MessagesFromALLSNSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: allsnsmessages-queue
+  snsTosqspolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: allow-sns-messages
+          Effect: Allow
+          Principal: '*'
+          Resource:
+            Fn::GetAtt:
+            - MySqsQueue
+            - Arn
+          Action: SQS:SendMessage
+          Condition:
+            ArnEquals:
+              aws:SourceArn:
+                Ref: MySNSTopic
+      Queues:
+      - Ref: MySqsQueue
+  snsTosqstwopolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: allow-sns-messages
+          Effect: Allow
+          Principal: '*'
+          Resource:
+            Fn::GetAtt:
+            - MySQSQueuetwo
+            - Arn
+          Action: SQS:SendMessage
+          Condition:
+            ArnEquals:
+              aws:SourceArn:
+                Ref: UserPoolRequestedTopic
+      Queues:
+      - Ref: MySQSQueuetwo
+  allsnsTosqspolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: allow-sns-messages
+          Effect: Allow
+          Principal: '*'
+          Resource:
+            Fn::GetAtt:
+            - MessagesFromALLSNSQueue
+            - Arn
+          Action: SQS:SendMessage
+          Condition:
+            ArnEquals:
+              aws:SourceArn:
+              - Ref: UserpoolTopic
+              - Ref: EmailVerificationTopic
+              - Ref: EmailVerifiedTopic
+      Queues:
+      - Ref: MessagesFromALLSNSQueue
+  MyQueueSNSsubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint:
+        Fn::GetAtt:
+        - MySqsQueue
+        - Arn
+      Protocol: sqs
+      TopicArn:
+        Ref: MySNSTopic
+      RawMessageDelivery: 'true'
+  MyQueueSNSsubscriptiontwo:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint:
+        Fn::GetAtt:
+        - MySQSQueuetwo
+        - Arn
+      Protocol: sqs
+      TopicArn:
+        Ref: UserPoolRequestedTopic
+      RawMessageDelivery: 'true'
+  QueueUserpoolSNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint:
+        Fn::GetAtt:
+        - MessagesFromALLSNSQueue
+        - Arn
+      Protocol: sqs
+      TopicArn:
+        Ref: UserpoolTopic
+      RawMessageDelivery: 'true'
+  QueueEmailVerificationTopicSNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint:
+        Fn::GetAtt:
+        - MessagesFromALLSNSQueue
+        - Arn
+      Protocol: sqs
+      TopicArn:
+        Ref: EmailVerificationTopic
+      RawMessageDelivery: 'true'
+  QueueEmailVerifiedTopicSNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint:
+        Fn::GetAtt:
+        - MessagesFromALLSNSQueue
+        - Arn
+      Protocol: sqs
+      TopicArn:
+        Ref: EmailVerifiedTopic
+      RawMessageDelivery: 'true'
+  WorkspaceDetaislTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName:
+        Ref: TableName
+      PrimaryKey:
+        Name: short_name
+        Type: String
+Outputs:
+  SwiftsassApi:
+    Description: API gateway endpoint url for dev stage for siwftsass functions
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod
